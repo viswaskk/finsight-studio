@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spend & Accounts Analytics Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-primary: #090D16;
+            --bg-secondary: rgba(17, 22, 37, 0.7);
+            --glass-card: rgba(22, 29, 49, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.06);
+            --text-primary: #F3F4F6;
+            --text-secondary: #9CA3AF;
+            --accent-indigo: #6366F1;
+            --accent-purple: #8B5CF6;
+            --accent-emerald: #10B981;
+            --accent-amber: #F59E0B;
+            --accent-rose: #EF4444;
+            --glow-indigo: rgba(99, 102, 241, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+            padding: 2rem;
+            line-height: 1.5;
+            background-image: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 40%);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .header-title h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #A5B4FC 0%, var(--accent-indigo) 50%, var(--accent-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-title p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+
+        .metadata {
+            text-align: right;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Key Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .metric-card {
+            background: var(--glass-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(12px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-indigo), var(--accent-purple));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px -10px var(--glow-indigo);
+            border-color: rgba(99, 102, 241, 0.2);
+        }
+
+        .metric-card:hover::before {
+            opacity: 1;
+        }
+
+        .metric-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-value.currency::before {
+            content: '₹';
+            margin-right: 2px;
+            font-weight: 500;
+        }
+
+        .metric-subtext {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Charts Section Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 3fr 2fr;
+            gap: 1.5rem;
+        }
+
+        .chart-card {
+            background: var(--glass-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(12px);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .chart-card.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .chart-two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            grid-column: 1 / -1;
+        }
+
+        .chart-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            border-left: 3px solid var(--accent-indigo);
+            padding-left: 0.75rem;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+        }
+
+        /* Insights & Recommendations */
+        .insights-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .insight-card {
+            border-left: 4px solid;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 1rem 1.25rem;
+            border-radius: 4px 12px 12px 4px;
+            border-color: var(--accent-indigo);
+            font-size: 0.95rem;
+        }
+
+        .insight-card.warning {
+            border-color: var(--accent-amber);
+            background: rgba(245, 158, 11, 0.02);
+        }
+
+        .insight-card.success {
+            border-color: var(--accent-emerald);
+            background: rgba(16, 185, 129, 0.02);
+        }
+
+        .insight-card strong {
+            color: var(--text-primary);
+        }
+
+        /* Table Section */
+        .table-section {
+            background: var(--glass-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(12px);
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .table-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .search-wrapper {
+            position: relative;
+            flex: 1;
+            max-width: 300px;
+        }
+
+        .search-input {
+            width: 100%;
+            background: rgba(10, 15, 30, 0.8);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-indigo);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        .filter-dropdown {
+            background: rgba(10, 15, 30, 0.8);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.3s;
+            max-width: 220px;
+        }
+
+        .filter-dropdown:focus {
+            border-color: var(--accent-indigo);
+        }
+
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background-color: rgba(10, 15, 26, 0.9);
+            color: var(--text-secondary);
+            font-weight: 600;
+            padding: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 2px solid var(--glass-border);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        th:hover {
+            color: var(--text-primary);
+        }
+
+        td {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid var(--glass-border);
+            color: #E5E7EB;
+        }
+
+        tr:hover td {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        /* Category Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.6rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            background-color: rgba(156, 163, 175, 0.15);
+            color: #D1D5DB;
+        }
+
+        .badge-food-dining {
+            background-color: rgba(245, 158, 11, 0.15);
+            color: #FBBF24;
+        }
+
+        .badge-travel {
+            background-color: rgba(59, 130, 246, 0.15);
+            color: #60A5FA;
+        }
+
+        .badge-shopping {
+            background-color: rgba(139, 92, 246, 0.15);
+            color: #A78BFA;
+        }
+
+        .badge-groceries {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: #34D399;
+        }
+
+        .badge-entertainment {
+            background-color: rgba(236, 72, 153, 0.15);
+            color: #F472B6;
+        }
+
+        .badge-utilities {
+            background-color: rgba(6, 182, 212, 0.15);
+            color: #22D3EE;
+        }
+
+        .badge-fuel {
+            background-color: rgba(100, 116, 139, 0.15);
+            color: #94A3B8;
+        }
+
+        .badge-finance {
+            background-color: rgba(239, 68, 68, 0.15);
+            color: #F87171;
+        }
+
+        .badge-education {
+            background-color: rgba(244, 63, 94, 0.15);
+            color: #FB7185;
+        }
+
+        .badge-healthcare {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: #34D399;
+        }
+
+        .badge-insurance {
+            background-color: rgba(124, 58, 237, 0.15);
+            color: #A78BFA;
+        }
+
+        .badge-automotive {
+            background-color: rgba(217, 70, 239, 0.15);
+            color: #F472B6;
+        }
+
+        .badge-uncategorized {
+            background-color: rgba(156, 163, 175, 0.15);
+            color: #D1D5DB;
+        }
+
+        .badge-payment {
+            background-color: rgba(16, 185, 129, 0.2);
+            color: #34D399;
+            font-weight: 600;
+        }
+
+        .badge-income {
+            background-color: rgba(16, 185, 129, 0.25);
+            color: #34D399;
+            font-weight: 600;
+        }
+
+        .amount-value {
+            font-family: monospace;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .amount-spent {
+            color: #F3F4F6;
+        }
+
+        .amount-credit {
+            color: var(--accent-emerald);
+        }
+
+        /* Global Filters */
+        .filter-section {
+            background: var(--glass-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.25rem 1.5rem;
+            backdrop-filter: blur(12px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .filter-title-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--text-primary);
+            letter-spacing: 0.5px;
+        }
+
+        .filter-icon {
+            width: 18px;
+            height: 18px;
+            color: var(--accent-indigo);
+        }
+
+        .filter-controls {
+            display: flex;
+            gap: 0.75rem;
+            flex: 1;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .date-cell {
+            white-space: nowrap;
+        }
+
+        footer {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            margin-top: 1rem;
+            padding: 1rem 0;
+        }
+
+        @media(max-width: 900px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-two-col {
+                grid-template-columns: 1fr;
+            }
+
+            body {
+                padding: 1rem;
+            }
+
+            .filter-section {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .filter-controls {
+                justify-content: flex-start;
+                width: 100%;
+            }
+
+            .filter-controls .search-wrapper {
+                max-width: 100%;
+                width: 100%;
+                flex: 1 1 100%;
+            }
+
+            .filter-dropdown {
+                max-width: none;
+                width: 100%;
+                flex: 1 1 calc(50% - 0.375rem);
+            }
+        }
+
+        /* Tabs Control styling */
+        .tabs-container {
+            display: flex;
+            gap: 1rem;
+            background: var(--glass-card);
+            border: 1px solid var(--glass-border);
+            padding: 0.5rem;
+            border-radius: 12px;
+            backdrop-filter: blur(12px);
+            margin-bottom: 0.5rem;
+        }
+
+        .tab-button {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .tab-button.active {
+            color: white;
+            background: linear-gradient(135deg, var(--accent-indigo), var(--accent-purple));
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .tab-icon {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* AI insights toggles */
+        .insights-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.25rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .insight-toggle-btn-group {
+            display: flex;
+            gap: 0.25rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            padding: 0.25rem;
+            border-radius: 8px;
+            backdrop-filter: blur(6px);
+        }
+
+        .toggle-subbtn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .toggle-subbtn:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .toggle-subbtn.active {
+            color: white;
+            background: linear-gradient(135deg, var(--accent-indigo), var(--accent-purple));
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="header-title">
+                <h1>Spend & Accounts Analytics Dashboard</h1>
+                <p>Interactive insights for credit cards and bank accounts</p>
+            </div>
+            <div class="metadata">
+                <p id="totalCardsAnalyzed">Loading...</p>
+                <p id="generationTime">Generated: Loading...</p>
+            </div>
+        </header>
+
+        <!-- Dashboard Tabs (Hidden by default, visible if multi-account type) -->
+        <div id="dashboardTabs" class="tabs-container" style="display: none;">
+            <button id="btnCreditTab" class="tab-button active" onclick="switchTab('credit')">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                    <line x1="1" y1="10" x2="23" y2="10"></line>
+                </svg>
+                <span>Credit Card Spends</span>
+            </button>
+            <button id="btnBankTab" class="tab-button" onclick="switchTab('bank')">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="22" width="18" height="2"></rect>
+                    <line x1="6" y1="18" x2="6" y2="11"></line>
+                    <line x1="10" y1="18" x2="10" y2="11"></line>
+                    <line x1="14" y1="18" x2="14" y2="11"></line>
+                    <line x1="18" y1="18" x2="18" y2="11"></line>
+                    <polygon points="12 2 20 7 4 7 12 2"></polygon>
+                </svg>
+                <span>Bank Accounts Flow</span>
+            </button>
+        </div>
+
+        <!-- Global Filter Bar -->
+        <div class="filter-section">
+            <div class="filter-title-wrapper">
+                <svg class="filter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                </svg>
+                <span>Global Filters</span>
+            </div>
+            <div class="filter-controls">
+                <div class="search-wrapper">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search description, date...">
+                </div>
+                <select id="cardFilter" class="filter-dropdown">
+                    <option value="ALL">All Cards/Accounts</option>
+                </select>
+                <select id="monthFilter" class="filter-dropdown">
+                    <option value="ALL">All Months</option>
+                </select>
+                <select id="categoryFilter" class="filter-dropdown">
+                    <option value="ALL">All Categories</option>
+                </select>
+                <select id="outlierFilter" class="filter-dropdown">
+                    <option value="ALL">No Outlier Filter</option>
+                    <option value="10000">Exclude > ₹10,000</option>
+                    <option value="20000">Exclude > ₹20,000</option>
+                    <option value="50000">Exclude > ₹50,000</option>
+                    <option value="100000">Exclude > ₹1,00,000</option>
+                    <option value="500000">Exclude > ₹5,00,000</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- KPI Metrics Grid -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Net Spending</div>
+                <div id="kpiNetSpending" class="metric-value currency">0.00</div>
+                <div class="metric-subtext">Total Debits - Refunds</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Monthly Average</div>
+                <div id="kpiMonthlyAvg" class="metric-value currency">0.00</div>
+                <div class="metric-subtext">Per active month</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Total Points Earned</div>
+                <div id="kpiPoints" class="metric-value" style="color: var(--accent-amber);">0</div>
+                <div class="metric-subtext">Reward / Neu / AP Points</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Total Transactions</div>
+                <div id="kpiTransactions" class="metric-value" style="color: var(--accent-purple);">0</div>
+                <div class="metric-subtext">Items processed</div>
+            </div>
+        </div>
+
+        <!-- Smart Insights -->
+        <div class="insights-section">
+            <div class="insights-header-row">
+                <h2 class="chart-title" style="margin: 0;">Smart Spending Insights</h2>
+                <div id="insightToggleContainer" class="insight-toggle-btn-group" style="display: none;">
+                    <button id="btnToggleGemini" class="toggle-subbtn active" onclick="setInsightMode('gemini')">✨ Gemini Coach</button>
+                    <button id="btnToggleRules" class="toggle-subbtn" onclick="setInsightMode('rules')">📊 Rule Metrics</button>
+                </div>
+            </div>
+            <div id="insightsContainer" class="metrics-grid"
+                style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
+                <!-- Dynamically Populated -->
+            </div>
+        </div>
+
+        <!-- Visualization Charts Grid -->
+        <div class="charts-grid">
+            <!-- Monthly Spend Chart -->
+            <div class="chart-card">
+                <div id="titleChartTrend" class="chart-title">Monthly Net Spending Trend</div>
+                <div class="chart-container">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Spend Category Doughnut Chart -->
+            <div class="chart-card">
+                <div id="titleChartCategory" class="chart-title">Spending by Category</div>
+                <div class="chart-container">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Two Sub-charts for Temporal and Merchant analyses -->
+            <div class="chart-two-col">
+                <div class="chart-card">
+                    <div id="titleChartDay" class="chart-title">Spending by Day of the Week</div>
+                    <div class="chart-container">
+                        <canvas id="dayOfWeekChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <div id="titleChartMerchant" class="chart-title">Top 10 Merchants / Establishments</div>
+                    <div class="chart-container">
+                        <canvas id="merchantChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inflow Channels Row (Visible only in Bank Accounts Mode) -->
+            <div id="inflowChartsRow" class="chart-card" style="display: none; margin-top: 1.5rem; grid-column: 1 / -1;">
+                <div id="titleChartInflow" class="chart-title">Top Inflow Channels / Sources</div>
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="inflowChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Transactions Table -->
+        <div class="table-section">
+            <div class="table-controls">
+                <h2 class="chart-title" style="border: none; padding-left: 0;">Transaction Ledger</h2>
+            </div>
+
+            <div class="table-container">
+                <table id="txTable">
+                    <thead>
+                        <tr>
+                            <th onclick="sortTable(0)">Date ↕</th>
+                            <th onclick="sortTable(1)">Category ↕</th>
+                            <th onclick="sortTable(2)">Description ↕</th>
+                            <th onclick="sortTable(3)">Points ↕</th>
+                            <th onclick="sortTable(4)">Amount ↕</th>
+                            <th onclick="sortTable(5)">Card/Account ↕</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Rendered dynamically -->
+                    </tbody>
+                    <tfoot>
+                        <tr
+                            style="font-weight: 600; background-color: rgba(10, 15, 26, 0.95); border-top: 2px solid var(--glass-border);">
+                            <td id="totalCount" style="color: var(--text-secondary);">0 transactions</td>
+                            <td></td>
+                            <td style="text-align: right; color: var(--text-secondary);">Total:</td>
+                            <td id="totalPoints" class="amount-value">0</td>
+                            <td id="totalAmount" class="amount-value">₹ 0.00</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <footer>
+            <p>Spend & Account Analyzer • Dashboard generated locally</p>
+        </footer>
+    </div>
+
+    <!-- Dynamic JavaScript Engine -->
+    <script>
+        let allTransactions = [];
+        let categoriesList = [];
+        let monthsOptions = [];
+        let uniqueMonths = [];
+        let geminiInsights = null;
+        let activeInsightMode = 'gemini';
+
+        let activeTab = 'credit';
+        let hasCreditCards = false;
+        let hasBankAccounts = false;
+
+        // Chart references
+        let trendChart, categoryChart, dayOfWeekChart, merchantChart, inflowChart;
+
+        // Current sort state
+        let currentSortCol = 0;
+        let currentSortAsc = false; // Descending by default for Date
+
+        // Date formatter helper: formats "YYYY-MM-DD HH:MM" to "DD-MM-YYYY HH:MM"
+        function formatToDMY(isoDateStr) {
+            if (!isoDateStr) return '';
+            const parts = isoDateStr.split(' ');
+            const datePart = parts[0];
+            const timePart = parts[1] || '';
+
+            const dateComponents = datePart.split('-');
+            if (dateComponents.length !== 3) return isoDateStr;
+
+            const [y, m, d] = dateComponents;
+            return `${d}-${m}-${y}${timePart ? ' ' + timePart : ''}`;
+        }
+
+        // Initialize Page
+        window.addEventListener('DOMContentLoaded', () => {
+            fetch('dashboard_data.json')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP status ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    allTransactions = data.transactions;
+                    categoriesList = data.categories_list;
+                    monthsOptions = data.months_options;
+                    uniqueMonths = data.unique_months;
+                    geminiInsights = data.gemini_insights || null;
+                    
+                    // Initialize insights toggle visibility
+                    const toggleContainer = document.getElementById('insightToggleContainer');
+                    if (geminiInsights && geminiInsights.length > 0) {
+                        toggleContainer.style.display = 'flex';
+                        activeInsightMode = 'gemini';
+                    } else {
+                        toggleContainer.style.display = 'none';
+                        activeInsightMode = 'rules';
+                    }
+
+                    // Detect account types
+                    hasCreditCards = allTransactions.some(tx => tx.account_type === 'credit');
+                    hasBankAccounts = allTransactions.some(tx => tx.account_type === 'bank');
+
+                    const tabsContainer = document.getElementById('dashboardTabs');
+                    if (hasCreditCards && hasBankAccounts) {
+                        tabsContainer.style.display = 'flex';
+                        activeTab = 'credit';
+                    } else if (hasBankAccounts) {
+                        tabsContainer.style.display = 'none';
+                        activeTab = 'bank';
+                    } else {
+                        tabsContainer.style.display = 'none';
+                        activeTab = 'credit';
+                    }
+
+                    // Update active button styles initially
+                    document.getElementById('btnCreditTab').classList.toggle('active', activeTab === 'credit');
+                    document.getElementById('btnBankTab').classList.toggle('active', activeTab === 'bank');
+
+                    switchTabStyle(activeTab);
+
+                    // Update generation time
+                    if (data.generated_at) {
+                        document.getElementById('generationTime').textContent = `Generated: ${data.generated_at}`;
+                    }
+
+                    // Populate filters
+                    populateFilters();
+
+                    // Initial filter & calculations
+                    updateDashboard();
+
+                    // Register listeners
+                    document.getElementById('searchInput').addEventListener('input', updateDashboard);
+                    document.getElementById('cardFilter').addEventListener('change', updateDashboard);
+                    document.getElementById('monthFilter').addEventListener('change', updateDashboard);
+                    document.getElementById('categoryFilter').addEventListener('change', updateDashboard);
+                    document.getElementById('outlierFilter').addEventListener('change', updateDashboard);
+                })
+                .catch(err => {
+                    console.error("Failed to load dashboard data:", err);
+                    showErrorOverlay(err);
+                });
+        });
+
+        function showErrorOverlay(error) {
+            const overlay = document.createElement('div');
+            overlay.id = 'errorOverlay';
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100%';
+            overlay.style.height = '100%';
+            overlay.style.backgroundColor = 'rgba(9, 13, 22, 0.9)';
+            overlay.style.backdropFilter = 'blur(8px)';
+            overlay.style.zIndex = '9999';
+            overlay.style.display = 'flex';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.padding = '2rem';
+
+            overlay.innerHTML = `
+                <div style="background: var(--glass-card); border: 1px solid var(--accent-rose); border-radius: 16px; padding: 2.5rem; max-width: 600px; width: 100%; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5); text-align: left; line-height: 1.6;">
+                    <h2 style="color: var(--accent-rose); font-size: 1.8rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.75rem; font-family: 'Outfit', sans-serif; font-weight: 700;">
+                        ⚠️ Load Restriction
+                    </h2>
+                    <p style="color: var(--text-primary); margin-bottom: 1.25rem; font-size: 1.05rem;">
+                        Unable to load <code>dashboard_data.json</code> automatically.
+                    </p>
+                    <div style="background: rgba(0, 0, 0, 0.2); border-radius: 8px; padding: 1rem; border: 1px solid var(--glass-border); margin-bottom: 1.5rem; font-family: monospace; font-size: 0.85rem; color: var(--text-secondary); word-break: break-all;">
+                        Error details: ${error.message || error}
+                    </div>
+                    <p style="color: var(--text-secondary); margin-bottom: 1.25rem;">
+                        Modern web browsers block local file fetching (CORS policy) when opening HTML pages directly using the <code>file://</code> protocol.
+                    </p>
+                    <h3 style="color: var(--text-primary); font-size: 1.1rem; margin-bottom: 0.75rem; font-weight: 600;">
+                        How to view your dashboard:
+                    </h3>
+                    <ol style="color: var(--text-secondary); padding-left: 1.25rem; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.95rem;">
+                        <li><strong>Option 1 (Recommended):</strong> Run the generator script:
+                            <div style="background: rgba(0, 0, 0, 0.3); padding: 0.5rem 0.75rem; border-radius: 6px; font-family: monospace; color: var(--accent-indigo); margin-top: 0.35rem; border: 1px solid rgba(255,255,255,0.03);">python3 generate_dashboard.py --csv transactions.csv</div>
+                            The script will automatically launch a secure local web server and open the browser for you!
+                        </li>
+                        <li><strong>Option 2:</strong> Manually run a local server in this folder:
+                            <div style="background: rgba(0, 0, 0, 0.3); padding: 0.5rem 0.75rem; border-radius: 6px; font-family: monospace; color: var(--accent-indigo); margin-top: 0.35rem; border: 1px solid rgba(255,255,255,0.03);">python3 -m http.server 8000</div>
+                            Then visit <a href="http://localhost:8000/dashboard.html" target="_blank" style="color: var(--accent-indigo); text-decoration: underline; font-weight: 500;">http://localhost:8000/dashboard.html</a> in your browser.
+                        </li>
+                    </ol>
+                    <div style="text-align: right;">
+                        <button onclick="document.getElementById('errorOverlay').remove()" style="background: linear-gradient(135deg, var(--accent-indigo), var(--accent-purple)); border: none; color: white; padding: 0.75rem 1.5rem; border-radius: 8px; font-family: inherit; font-weight: 600; cursor: pointer; transition: opacity 0.2s; outline: none;">
+                            Dismiss
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+
+        function switchTab(tab) {
+            if (activeTab === tab) return;
+            activeTab = tab;
+
+            // Update active button styling
+            document.getElementById('btnCreditTab').classList.toggle('active', tab === 'credit');
+            document.getElementById('btnBankTab').classList.toggle('active', tab === 'bank');
+
+            switchTabStyle(tab);
+
+            // Reset card, month, category filter selections when toggling tabs to avoid cross-pollution
+            document.getElementById('cardFilter').value = 'ALL';
+            document.getElementById('monthFilter').value = 'ALL';
+            document.getElementById('categoryFilter').value = 'ALL';
+
+            populateFilters();
+            updateDashboard();
+        }
+
+        function switchTabStyle(tab) {
+            const pointsHeader = document.querySelector('#txTable th:nth-child(4)');
+            const pointsFooter = document.getElementById('totalPoints');
+
+            if (tab === 'bank') {
+                if (pointsHeader) pointsHeader.style.display = 'none';
+                if (pointsFooter) pointsFooter.style.display = 'none';
+            } else {
+                if (pointsHeader) pointsHeader.style.display = '';
+                if (pointsFooter) pointsFooter.style.display = '';
+            }
+        }
+
+        function populateFilters() {
+            // Populate Card Filter
+            const cardFilter = document.getElementById('cardFilter');
+            
+            // Only extract unique cards belonging to active tab type
+            const tabTransactions = allTransactions.filter(tx => tx.account_type === activeTab);
+            const uniqueCards = [...new Set(tabTransactions.map(tx => tx.card))].sort();
+
+            // Reset options keep only 'ALL'
+            cardFilter.innerHTML = `<option value="ALL">All ${activeTab === 'bank' ? 'Accounts' : 'Cards'}</option>`;
+            uniqueCards.forEach(card => {
+                const opt = document.createElement('option');
+                opt.value = card;
+                opt.textContent = card;
+                cardFilter.appendChild(opt);
+            });
+
+            document.getElementById('totalCardsAnalyzed').textContent = `Analyzed ${activeTab === 'bank' ? 'Accounts' : 'Cards'}: ${uniqueCards.length} (${uniqueMonths.length} months)`;
+
+            // Populate Month Filter
+            const monthFilter = document.getElementById('monthFilter');
+            monthFilter.innerHTML = '<option value="ALL">All Months</option>';
+            monthsOptions.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.value;
+                opt.textContent = m.label;
+                monthFilter.appendChild(opt);
+            });
+
+            // Populate Category Filter
+            const categoryFilter = document.getElementById('categoryFilter');
+            categoryFilter.innerHTML = '<option value="ALL">All Categories</option><option value="Payment">Payments</option>';
+            categoriesList.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = cat;
+                categoryFilter.appendChild(opt);
+            });
+        }
+
+        function updateDashboard() {
+            const selectedCard = document.getElementById('cardFilter').value;
+            const selectedMonth = document.getElementById('monthFilter').value;
+            const selectedCategory = document.getElementById('categoryFilter').value;
+            const selectedOutlier = document.getElementById('outlierFilter').value;
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+
+            // Filter transactions
+            const filtered = allTransactions.filter(tx => {
+                const tabMatch = tx.account_type === activeTab;
+                if (!tabMatch) return false;
+
+                const cardMatch = (selectedCard === 'ALL') || (tx.card === selectedCard);
+                const monthMatch = (selectedMonth === 'ALL') || (tx.month === selectedMonth);
+                let categoryMatch = false;
+                if (selectedCategory === 'ALL') {
+                    categoryMatch = !tx.is_payment;
+                } else if (selectedCategory === 'Payment') {
+                    categoryMatch = tx.is_payment;
+                } else {
+                    categoryMatch = (tx.category === selectedCategory);
+                }
+                let outlierMatch = true;
+                if (selectedOutlier !== 'ALL') {
+                    const threshold = parseFloat(selectedOutlier);
+                    if (!tx.is_payment && Math.abs(tx.amount) > threshold) {
+                        outlierMatch = false;
+                    }
+                }
+                const formattedDate = formatToDMY(tx.date);
+                const textMatch = tx.description.toLowerCase().includes(searchQuery) ||
+                    formattedDate.toLowerCase().includes(searchQuery);
+                return cardMatch && monthMatch && categoryMatch && textMatch && outlierMatch;
+            });
+
+            // Calculate KPIs
+            let netSpending = 0.0;
+            let totalDebited = 0.0;
+            let totalCredited = 0.0;
+            let totalPoints = 0;
+            let paymentCredited = 0.0;
+
+            filtered.forEach(tx => {
+                if (tx.is_payment) {
+                    paymentCredited += tx.amount; // repayments
+                } else {
+                    totalPoints += tx.points;
+                    netSpending += tx.amount; // keeps original sign
+                    if (tx.amount < 0) {
+                        totalDebited += Math.abs(tx.amount);
+                    } else {
+                        totalCredited += tx.amount;
+                    }
+                }
+            });
+
+            // Calculate active months
+            const activeMonths = [...new Set(filtered.filter(tx => !tx.is_payment).map(tx => tx.month))];
+            const numMonths = activeMonths.length || 1;
+            const avgMonthlySpend = netSpending / numMonths;
+
+            // Update UI KPIs depending on mode
+            const metricCards = document.querySelectorAll('.metric-card');
+
+            if (activeTab === 'bank') {
+                let totalInflow = 0.0;
+                let totalOutflow = 0.0;
+
+                filtered.forEach(tx => {
+                    if (tx.amount > 0) {
+                        totalInflow += tx.amount;
+                    } else {
+                        totalOutflow += Math.abs(tx.amount);
+                    }
+                });
+
+                const netSavings = totalInflow - totalOutflow;
+                const savingsRate = totalInflow > 0 ? (netSavings / totalInflow) * 100 : 0;
+
+                // Outflow Card
+                metricCards[0].querySelector('.metric-label').textContent = 'Total Outflow (Debits)';
+                const outflowDiv = document.getElementById('kpiNetSpending');
+                outflowDiv.textContent = totalOutflow.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                metricCards[0].querySelector('.metric-subtext').textContent = 'Outgoing spends & transfers';
+
+                // Inflow Card
+                metricCards[1].querySelector('.metric-label').textContent = 'Total Inflow (Credits)';
+                const inflowDiv = document.getElementById('kpiMonthlyAvg');
+                inflowDiv.textContent = totalInflow.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                metricCards[1].querySelector('.metric-subtext').textContent = 'Incoming deposits & credits';
+
+                // Net Cash Flow Card
+                metricCards[2].querySelector('.metric-label').textContent = 'Net Savings / Cash Flow';
+                const savingsDiv = document.getElementById('kpiPoints');
+                savingsDiv.textContent = (netSavings >= 0 ? '' : '-') + '₹ ' + Math.abs(netSavings).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                savingsDiv.style.color = netSavings >= 0 ? 'var(--accent-emerald)' : 'var(--accent-rose)';
+                metricCards[2].querySelector('.metric-subtext').textContent = 'Inflow - Outflow';
+
+                // Savings Rate Card
+                metricCards[3].querySelector('.metric-label').textContent = 'Savings Rate';
+                const rateDiv = document.getElementById('kpiTransactions');
+                rateDiv.textContent = (totalInflow > 0 ? savingsRate.toFixed(1) : '0.0') + '%';
+                rateDiv.style.color = netSavings >= 0 ? 'var(--accent-indigo)' : 'var(--accent-rose)';
+                metricCards[3].querySelector('.metric-subtext').textContent = 'Percentage of income saved';
+
+                // Update Chart Titles
+                document.getElementById('titleChartTrend').textContent = 'Monthly Cash Flow Trend (Inflow vs Outflow)';
+                document.getElementById('titleChartCategory').textContent = 'Outflow by Category';
+                document.getElementById('titleChartDay').textContent = 'Outflow by Day of the Week';
+                document.getElementById('titleChartMerchant').textContent = 'Top Outflow Channels / Merchants';
+            } else {
+                // Credit Card Mode
+                // Net Spending Card
+                metricCards[0].querySelector('.metric-label').textContent = 'Net Spending';
+                const netSpendDiv = document.getElementById('kpiNetSpending');
+                netSpendDiv.textContent = Math.abs(netSpending).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                metricCards[0].querySelector('.metric-subtext').textContent = 'Total Debits - Refunds';
+
+                // Monthly Average Card
+                metricCards[1].querySelector('.metric-label').textContent = 'Monthly Average';
+                const avgDiv = document.getElementById('kpiMonthlyAvg');
+                avgDiv.textContent = Math.abs(avgMonthlySpend).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                avgDiv.classList.add('currency');
+                metricCards[1].querySelector('.metric-subtext').textContent = 'Per active month';
+
+                // Total Points Card
+                metricCards[2].querySelector('.metric-label').textContent = 'Total Points Earned';
+                const pointsDiv = document.getElementById('kpiPoints');
+                pointsDiv.textContent = totalPoints.toLocaleString('en-IN');
+                pointsDiv.style.color = 'var(--accent-amber)';
+                metricCards[2].querySelector('.metric-subtext').textContent = 'Reward / Neu / AP Points';
+
+                // Total Transactions Card
+                metricCards[3].querySelector('.metric-label').textContent = 'Total Transactions';
+                const txsDiv = document.getElementById('kpiTransactions');
+                txsDiv.textContent = filtered.length.toLocaleString('en-IN');
+                txsDiv.style.color = 'var(--accent-purple)';
+                metricCards[3].querySelector('.metric-subtext').textContent = 'Items processed';
+
+                // Update Chart Titles
+                document.getElementById('titleChartTrend').textContent = 'Monthly Net Spending Trend';
+                document.getElementById('titleChartCategory').textContent = 'Spending by Category';
+                document.getElementById('titleChartDay').textContent = 'Spending by Day of the Week';
+                document.getElementById('titleChartMerchant').textContent = 'Top 10 Merchants / Establishments';
+            }
+
+            // Render Ledger Table
+            renderTable(filtered, totalPoints, netSpending);
+
+            // Render Charts
+            renderCharts(filtered, uniqueMonths);
+
+            // Render Insights
+            renderInsights(filtered, uniqueMonths, totalDebited, netSpending);
+        }
+
+        function renderTable(txs, totalPoints, netSpending) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            // Apply sorting to the list before rendering
+            const sortedTxs = [...txs].sort((a, b) => {
+                let valA, valB;
+                if (currentSortCol === 0) { // Date
+                    valA = new Date(a.date);
+                    valB = new Date(b.date);
+                } else if (currentSortCol === 1) { // Category
+                    valA = a.category;
+                    valB = b.category;
+                } else if (currentSortCol === 2) { // Description
+                    valA = a.description;
+                    valB = b.description;
+                } else if (currentSortCol === 3) { // Points
+                    valA = a.points;
+                    valB = b.points;
+                } else if (currentSortCol === 4) { // Amount
+                    valA = a.amount;
+                    valB = b.amount;
+                } else if (currentSortCol === 5) { // Card
+                    valA = a.card;
+                    valB = b.card;
+                }
+
+                if (valA < valB) return currentSortAsc ? -1 : 1;
+                if (valA > valB) return currentSortAsc ? 1 : -1;
+                return 0;
+            });
+
+            sortedTxs.forEach(tx => {
+                const badgeCls = tx.category.toLowerCase().replace(/ & /g, "-").replace(/ /g, "-");
+                const amtCls = tx.amount > 0 ? "amount-credit" : "amount-spent";
+                const prefix = tx.amount > 0 ? "+" : "";
+                const formattedAmt = "₹ " + prefix + tx.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="date-cell">${formatToDMY(tx.date)}</td>
+                    <td><span class="badge badge-${badgeCls}">${tx.category}</span></td>
+                    <td>${tx.description}</td>
+                    <td data-value="${tx.points}" style="${activeTab === 'bank' ? 'display: none;' : ''}">${tx.points}</td>
+                    <td class="amount-value ${amtCls}" data-value="${tx.amount}">${formattedAmt}</td>
+                    <td><span style="font-size:0.85rem; color:var(--text-secondary);">${tx.card}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('totalCount').textContent = txs.length + ' transaction' + (txs.length !== 1 ? 's' : '');
+            document.getElementById('totalPoints').textContent = totalPoints.toLocaleString('en-IN');
+
+            const totalAmount = txs.reduce((sum, tx) => sum + tx.amount, 0.0);
+            const totalAmtCell = document.getElementById('totalAmount');
+            const prefix = totalAmount > 0 ? "+" : "";
+            totalAmtCell.textContent = "₹ " + prefix + totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            totalAmtCell.className = totalAmount < 0 ? 'amount-value amount-spent' : 'amount-value amount-credit';
+        }
+
+        function sortTable(colIndex) {
+            if (currentSortCol === colIndex) {
+                currentSortAsc = !currentSortAsc;
+            } else {
+                currentSortCol = colIndex;
+                currentSortAsc = true;
+            }
+
+            // Re-render dashboard containing sorted table
+            updateDashboard();
+        }
+
+        function renderCharts(filtered, monthsList) {
+            // 1. Monthly Trends / Cash Flow Chart
+            if (trendChart) trendChart.destroy();
+            const trendCtx = document.getElementById('trendChart').getContext('2d');
+
+            if (activeTab === 'bank') {
+                // Grouped Bar Chart for Income vs Outflow
+                const monthlyInflow = monthsList.map(m => {
+                    return filtered.filter(tx => tx.month === m && tx.amount > 0)
+                        .reduce((sum, tx) => sum + tx.amount, 0.0);
+                });
+                const monthlyOutflow = monthsList.map(m => {
+                    return filtered.filter(tx => tx.month === m && tx.amount < 0)
+                        .reduce((sum, tx) => sum + Math.abs(tx.amount), 0.0);
+                });
+
+                trendChart = new Chart(trendCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: monthsList,
+                        datasets: [
+                            {
+                                label: 'Monthly Inflow (Credits)',
+                                data: monthlyInflow,
+                                backgroundColor: 'rgba(16, 185, 129, 0.75)',
+                                borderColor: '#10B981',
+                                borderWidth: 1,
+                                borderRadius: 4,
+                                hoverBackgroundColor: '#10B981'
+                            },
+                            {
+                                label: 'Monthly Outflow (Debits)',
+                                data: monthlyOutflow,
+                                backgroundColor: 'rgba(239, 68, 68, 0.75)',
+                                borderColor: '#EF4444',
+                                borderWidth: 1,
+                                borderRadius: 4,
+                                hoverBackgroundColor: '#EF4444'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: '#9CA3AF', font: { family: 'Outfit' } } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        return context.dataset.label + ': ₹' + context.parsed.y.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9CA3AF' } },
+                            y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9CA3AF' } }
+                        }
+                    }
+                });
+            } else {
+                // Credit Card Line Chart Style
+                const monthlySpending = monthsList.map(m => {
+                    return filtered.filter(tx => tx.month === m && !tx.is_payment && tx.amount < 0)
+                        .reduce((sum, tx) => sum + Math.abs(tx.amount), 0.0);
+                });
+                const monthlyCredits = monthsList.map(m => {
+                    return filtered.filter(tx => tx.month === m && !tx.is_payment && tx.amount > 0)
+                        .reduce((sum, tx) => sum + tx.amount, 0.0);
+                });
+
+                const gradientIndigo = trendCtx.createLinearGradient(0, 0, 0, 300);
+                gradientIndigo.addColorStop(0, 'rgba(99, 102, 241, 0.4)');
+                gradientIndigo.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
+
+                trendChart = new Chart(trendCtx, {
+                    type: 'line',
+                    data: {
+                        labels: monthsList,
+                        datasets: [
+                            {
+                                label: 'Gross Debits (Spend)',
+                                data: monthlySpending,
+                                borderColor: '#6366F1',
+                                borderWidth: 3,
+                                pointBackgroundColor: '#6366F1',
+                                pointHoverRadius: 7,
+                                tension: 0.35,
+                                fill: true,
+                                backgroundColor: gradientIndigo
+                            },
+                            {
+                                label: 'Credits / Refunds',
+                                data: monthlyCredits,
+                                borderColor: '#10B981',
+                                borderWidth: 2,
+                                borderDash: [5, 5],
+                                pointBackgroundColor: '#10B981',
+                                tension: 0.35,
+                                fill: false
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: '#9CA3AF', font: { family: 'Outfit' } } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        return context.dataset.label + ': ₹' + context.parsed.y.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9CA3AF' } },
+                            y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9CA3AF' } }
+                        }
+                    }
+                });
+            }
+
+            // 2. Category Doughnut Chart
+            const categoryTotals = {};
+            filtered.filter(tx => !tx.is_payment && tx.amount < 0).forEach(tx => {
+                categoryTotals[tx.category] = (categoryTotals[tx.category] || 0.0) + Math.abs(tx.amount);
+            });
+            const sortedCategories = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);
+            const catLabels = sortedCategories.map(c => c[0]);
+            const catValues = sortedCategories.map(c => c[1]);
+
+            if (categoryChart) categoryChart.destroy();
+            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+            categoryChart = new Chart(categoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: catLabels,
+                    datasets: [{
+                        data: catValues,
+                        backgroundColor: [
+                            '#4F46E5', '#8B5CF6', '#EC4899', '#10B981',
+                            '#06B6D4', '#F59E0B', '#EF4444', '#64748B',
+                            '#3B82F6', '#14B8A6', '#EC4899', '#A855F7'
+                        ],
+                        borderWidth: 1,
+                        borderColor: 'rgba(9, 13, 22, 0.8)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { color: '#9CA3AF', font: { family: 'Outfit', size: 11 } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    const sum = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const val = context.parsed;
+                                    const pct = ((val / sum) * 100).toFixed(1);
+                                    return context.label + ': ₹' + val.toLocaleString('en-IN') + ' (' + pct + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 3. Day of Week Bar Chart
+            const daysOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+            const dayTotals = {};
+            filtered.filter(tx => !tx.is_payment && tx.amount < 0).forEach(tx => {
+                const dateParts = tx.date.split(' ')[0].split('-');
+                const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+                const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                dayTotals[dayName] = (dayTotals[dayName] || 0.0) + Math.abs(tx.amount);
+            });
+            const daySpending = daysOrder.map(d => dayTotals[d] || 0.0);
+
+            if (dayOfWeekChart) dayOfWeekChart.destroy();
+            const dayCtx = document.getElementById('dayOfWeekChart').getContext('2d');
+            dayOfWeekChart = new Chart(dayCtx, {
+                type: 'bar',
+                data: {
+                    labels: daysOrder,
+                    datasets: [{
+                        label: 'Total Spend',
+                        data: daySpending,
+                        backgroundColor: 'rgba(139, 92, 246, 0.75)',
+                        borderRadius: 6,
+                        hoverBackgroundColor: '#8B5CF6'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return '₹' + context.parsed.y.toLocaleString('en-IN');
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#9CA3AF' } },
+                        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9CA3AF' } }
+                    }
+                }
+            });
+
+            // 4. Merchant Bar Chart
+            const merchantTotals = {};
+            filtered.filter(tx => !tx.is_payment && tx.amount < 0).forEach(tx => {
+                merchantTotals[tx.merchant] = (merchantTotals[tx.merchant] || 0.0) + Math.abs(tx.amount);
+            });
+            const sortedMerchants = Object.entries(merchantTotals).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            const merchantLabels = sortedMerchants.map(m => m[0]);
+            const merchantSpending = sortedMerchants.map(m => m[1]);
+
+            if (merchantChart) merchantChart.destroy();
+            const merchantCtx = document.getElementById('merchantChart').getContext('2d');
+            merchantChart = new Chart(merchantCtx, {
+                type: 'bar',
+                data: {
+                    labels: merchantLabels,
+                    datasets: [{
+                        label: 'Total Spent',
+                        data: merchantSpending,
+                        backgroundColor: 'rgba(16, 185, 129, 0.75)',
+                        borderRadius: 6,
+                        hoverBackgroundColor: '#10B981'
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return '₹' + context.parsed.x.toLocaleString('en-IN');
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9CA3AF' } },
+                        y: { grid: { display: false }, ticks: { color: '#9CA3AF' } }
+                    }
+                }
+            });
+
+            // 5. Inflow Channels Horizontal Bar Chart (only if bank mode active)
+            const inflowRow = document.getElementById('inflowChartsRow');
+            if (activeTab === 'bank') {
+                inflowRow.style.display = 'block';
+
+                const inflowTotals = {};
+                filtered.filter(tx => tx.amount > 0).forEach(tx => {
+                    const channel = tx.merchant || 'Unknown';
+                    inflowTotals[channel] = (inflowTotals[channel] || 0.0) + tx.amount;
+                });
+
+                const sortedInflows = Object.entries(inflowTotals).sort((a, b) => b[1] - a[1]).slice(0, 10);
+                const inflowLabels = sortedInflows.map(m => m[0]);
+                const inflowValues = sortedInflows.map(m => m[1]);
+
+                if (inflowChart) inflowChart.destroy();
+                const inflowCtx = document.getElementById('inflowChart').getContext('2d');
+                inflowChart = new Chart(inflowCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: inflowLabels,
+                        datasets: [{
+                            label: 'Total Inflow',
+                            data: inflowValues,
+                            backgroundColor: 'rgba(16, 185, 129, 0.75)',
+                            borderRadius: 6,
+                            hoverBackgroundColor: '#10B981'
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        return context.parsed.x.toLocaleString('en-IN');
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9CA3AF' } },
+                            y: { grid: { display: false }, ticks: { color: '#9CA3AF' } }
+                        }
+                    }
+                });
+            } else {
+                inflowRow.style.display = 'none';
+                if (inflowChart) {
+                    inflowChart.destroy();
+                    inflowChart = null;
+                }
+            }
+        }
+
+        function setInsightMode(mode) {
+            if (activeInsightMode === mode) return;
+            activeInsightMode = mode;
+            
+            // Update active switcher buttons styling
+            document.getElementById('btnToggleGemini').classList.toggle('active', mode === 'gemini');
+            document.getElementById('btnToggleRules').classList.toggle('active', mode === 'rules');
+            
+            // Re-render insights via updateDashboard
+            updateDashboard();
+        }
+
+        function renderInsights(filtered, monthsList, totalDebited, netSpending) {
+            const container = document.getElementById('insightsContainer');
+            
+            // Check if Gemini insights are active and available
+            if (geminiInsights && geminiInsights.length > 0 && activeInsightMode === 'gemini') {
+                let geminiHTML = '';
+                geminiInsights.forEach(ins => {
+                    const typeCls = ins.type || 'info'; // info, warning, success, danger
+                    let icon = '💡';
+                    if (typeCls === 'warning') icon = '⚠️';
+                    else if (typeCls === 'danger') icon = '🛑';
+                    else if (typeCls === 'success') icon = '✨';
+                    
+                    geminiHTML += `
+                        <div class="insight-card ${typeCls}">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 0.4rem;">
+                                <span style="font-size: 1.15rem; line-height: 1;">${icon}</span>
+                                <strong style="text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; color: var(--text-primary);">${typeCls} Gemini Coach Alert</strong>
+                            </div>
+                            <div style="line-height: 1.5; color: #E5E7EB;">${ins.message}</div>
+                        </div>`;
+                });
+                container.innerHTML = geminiHTML;
+                return;
+            }
+
+            const selectedCard = document.getElementById('cardFilter').value;
+            let insightsHTML = '';
+
+            if (activeTab === 'bank') {
+                // ---------------- BANK FLOW DASHBOARD INSIGHTS ----------------
+                let totalInflow = 0.0;
+                let totalOutflow = 0.0;
+
+                filtered.forEach(tx => {
+                    if (tx.amount > 0) {
+                        totalInflow += tx.amount;
+                    } else {
+                        totalOutflow += Math.abs(tx.amount);
+                    }
+                });
+
+                const netSavings = totalInflow - totalOutflow;
+                const savingsRate = totalInflow > 0 ? (netSavings / totalInflow) * 100 : 0;
+
+                // 1. Month-over-month net cash flow comparison
+                const monthlyInflows = monthsList.map(m => {
+                    return filtered.filter(tx => tx.month === m && tx.amount > 0)
+                        .reduce((sum, tx) => sum + tx.amount, 0.0);
+                });
+                const monthlyOutflows = monthsList.map(m => {
+                    return filtered.filter(tx => tx.month === m && tx.amount < 0)
+                        .reduce((sum, tx) => sum + Math.abs(tx.amount), 0.0);
+                });
+
+                const activeMonths = monthsList.filter((m, idx) => monthlyInflows[idx] > 0 || monthlyOutflows[idx] > 0);
+
+                if (activeMonths.length >= 2) {
+                    const lm = activeMonths[activeMonths.length - 1];
+                    const pm = activeMonths[activeMonths.length - 2];
+                    const lmIdx = monthsList.indexOf(lm);
+                    const pmIdx = monthsList.indexOf(pm);
+
+                    const lmNet = monthlyInflows[lmIdx] - monthlyOutflows[lmIdx];
+                    const pmNet = monthlyInflows[pmIdx] - monthlyOutflows[pmIdx];
+
+                    const verb = lmNet >= 0 ? 'savings' : 'deficit';
+                    const pmVerb = pmNet >= 0 ? 'savings' : 'deficit';
+                    const typeClass = lmNet >= pmNet ? 'success' : 'warning';
+
+                    insightsHTML += `
+                        <div class="insight-card ${typeClass}">
+                            Latest Month (${lm}) net cash flow was a <strong>${verb} of ₹${Math.abs(lmNet).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong> (compared to a ${pmVerb} of ₹${Math.abs(pmNet).toLocaleString('en-IN', { maximumFractionDigits: 0 })} in ${pm}).
+                        </div>`;
+                }
+
+                // 2. Savings Rate / Cash Flow Status
+                if (netSavings >= 0) {
+                    insightsHTML += `
+                        <div class="insight-card success">
+                            Overall net savings of <strong>₹${netSavings.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong> captured. Your cumulative savings rate is <strong>${savingsRate.toFixed(1)}%</strong>.
+                        </div>`;
+                } else {
+                    insightsHTML += `
+                        <div class="insight-card warning">
+                            Overall net deficit of <strong>₹${Math.abs(netSavings).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong>. Outflows exceeded inflows by <strong>${Math.abs(savingsRate).toFixed(1)}%</strong>.
+                        </div>`;
+                }
+
+                // 3. Primary Outflow driver category
+                const categoryTotals = {};
+                filtered.filter(tx => tx.amount < 0).forEach(tx => {
+                    categoryTotals[tx.category] = (categoryTotals[tx.category] || 0.0) + Math.abs(tx.amount);
+                });
+                const sortedCategories = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);
+                if (sortedCategories.length > 0) {
+                    const [topCat, topAmt] = sortedCategories[0];
+                    const catPct = totalOutflow > 0 ? (topAmt / totalOutflow * 100.0) : 0.0;
+                    insightsHTML += `
+                        <div class="insight-card info">
+                            <strong>${topCat}</strong> is your primary outflow channel, accounting for <strong>₹${topAmt.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong> (${catPct.toFixed(1)}% of all debits).
+                        </div>`;
+                }
+
+                // 4. High-Value Outflows alert
+                const highValueOutflows = filtered.filter(tx => tx.amount < 0 && Math.abs(tx.amount) > 20000.0);
+                if (highValueOutflows.length > 0) {
+                    insightsHTML += `
+                        <div class="insight-card warning">
+                            Identified <strong>${highValueOutflows.length}</strong> high-value outflows (> ₹20,000). Review these in the transaction ledger.
+                        </div>`;
+                }
+
+            } else {
+                // ---------------- CREDIT CARD DASHBOARD INSIGHTS ----------------
+                // Calculate Monthly Net Spend over active filtered months
+                const monthlySpending = monthsList.map(m => {
+                    return filtered.filter(tx => tx.month === m && !tx.is_payment && tx.amount < 0)
+                        .reduce((sum, tx) => sum + Math.abs(tx.amount), 0.0);
+                });
+                const monthlyCredits = monthsList.map(m => {
+                    return filtered.filter(tx => tx.month === m && !tx.is_payment && tx.amount > 0)
+                        .reduce((sum, tx) => sum + tx.amount, 0.0);
+                });
+
+                const activeSpendMonths = monthsList.filter((m, idx) => monthlySpending[idx] > 0);
+
+                // 1. Month-over-month spending comparison
+                if (activeSpendMonths.length >= 2) {
+                    const lm = activeSpendMonths[activeSpendMonths.length - 1];
+                    const pm = activeSpendMonths[activeSpendMonths.length - 2];
+                    const lmIdx = monthsList.indexOf(lm);
+                    const pmIdx = monthsList.indexOf(pm);
+                    const lmNet = monthlySpending[lmIdx] - monthlyCredits[lmIdx];
+                    const pmNet = monthlySpending[pmIdx] - monthlyCredits[pmIdx];
+
+                    if (pmNet > 0) {
+                        const diffPct = ((lmNet - pmNet) / pmNet) * 100.0;
+                        const arrow = diffPct > 0 ? "increased" : "decreased";
+                        const cardScope = selectedCard !== 'ALL' ? `for card <strong>${selectedCard}</strong> ` : '';
+                        const typeClass = diffPct > 15.0 ? 'warning' : 'success';
+                        insightsHTML += `
+                            <div class="insight-card ${typeClass}">
+                                Your net spending ${cardScope}in the latest month (${lm}) ${arrow} by <strong>${Math.abs(diffPct).toFixed(1)}%</strong> compared to the previous month (${pm}).
+                            </div>`;
+                    }
+                }
+
+                // 2. Volatility CV Insight
+                const monthlyNets = monthsList.map((m, idx) => monthlySpending[idx] - monthlyCredits[idx]).filter(v => v > 0);
+                if (monthlyNets.length >= 2) {
+                    const sum = monthlyNets.reduce((a, b) => a + b, 0);
+                    const mean = sum / monthlyNets.length;
+                    const squaredDiffs = monthlyNets.map(v => Math.pow(v - mean, 2));
+                    const sumSquaredDiffs = squaredDiffs.reduce((a, b) => a + b, 0);
+                    const stdDev = Math.sqrt(sumSquaredDiffs / (monthlyNets.length - 1));
+
+                    if (mean > 0) {
+                        const cv = (stdDev / mean) * 100.0;
+                        const level = cv > 50.0 ? "High" : cv > 25.0 ? "Moderate" : "Low";
+                        const typeClass = level === "High" ? "warning" : "success";
+                        insightsHTML += `
+                            <div class="insight-card ${typeClass}">
+                                Spending has <strong>${level}</strong> volatility (${cv.toFixed(1)}% CV). ${level === "High" ? 'Your expenses fluctuate significantly month-to-month.' : 'Your monthly spending remains relatively stable.'}
+                            </div>`;
+                    }
+                }
+
+                // 3. Primary Spending Driver Category
+                const categoryTotals = {};
+                filtered.filter(tx => !tx.is_payment && tx.amount < 0).forEach(tx => {
+                    categoryTotals[tx.category] = (categoryTotals[tx.category] || 0.0) + Math.abs(tx.amount);
+                });
+                const sortedCategories = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);
+                if (sortedCategories.length > 0) {
+                    const [topCat, topCatAmt] = sortedCategories[0];
+                    const catPct = totalDebited > 0 ? (topCatAmt / totalDebited * 100.0) : 0.0;
+                    insightsHTML += `
+                        <div class="insight-card info">
+                            <strong>${topCat}</strong> is the primary spending driver, accounting for <strong>₹${topCatAmt.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</strong> (${catPct.toFixed(1)}% of all debits).
+                        </div>`;
+                }
+
+                // 4. Weekend Spending Ratio
+                const daysOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+                const dayTotals = {};
+                filtered.filter(tx => !tx.is_payment && tx.amount < 0).forEach(tx => {
+                    const dateParts = tx.date.split(' ')[0].split('-');
+                    const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+                    const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                    dayTotals[dayName] = (dayTotals[dayName] || 0.0) + Math.abs(tx.amount);
+                });
+                const totalSpent = daysOrder.reduce((sum, d) => sum + (dayTotals[d] || 0.0), 0.0);
+                const weekendSpent = (dayTotals["Saturday"] || 0.0) + (dayTotals["Sunday"] || 0.0);
+                const weekendRatio = totalSpent > 0 ? (weekendSpent / totalSpent * 100.0) : 0.0;
+                if (weekendRatio > 35.0) {
+                    insightsHTML += `
+                        <div class="insight-card info">
+                            Weekend spending is highly active at <strong>${weekendRatio.toFixed(1)}%</strong> of total spend. Keep track of leisure outlays.
+                        </div>`;
+                }
+
+                // 5. High-Value Transactions Alert
+                const highValueTxs = filtered.filter(tx => !tx.is_payment && Math.abs(tx.amount) > 20000.0);
+                if (highValueTxs.length > 0) {
+                    insightsHTML += `
+                        <div class="insight-card warning">
+                            Identified <strong>${highValueTxs.length}</strong> high-value transactions (> ₹20,000). Inspect them in the transaction ledger below.
+                        </div>`;
+                }
+            }
+
+            container.innerHTML = insightsHTML || `
+                <div class="insight-card success">
+                    No significant anomalies or warning patterns detected. All transactions are within stable ranges.
+                </div>`;
+        }
+    </script>
+</body>
+
+</html>

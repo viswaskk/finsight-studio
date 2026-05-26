@@ -1,0 +1,20 @@
+# Ignore PDF statements containing personal financial records
+*.pdf
+*.PDF
+
+# Ignore parsed personal transaction data exported for the dashboard
+dashboard_data.json
+dashboard.html
+
+# Ignore custom card mappings containing user-specific card details
+cards.json
+
+# Ignore Gemini cache containing user-specific transaction description
+gemini_cache.json
+
+# Python bytecode cache
+__pycache__/
+*.pyc
+
+# macOS system files
+.DS_Store

@@ -1,0 +1,139 @@
+{
+  "Food & Dining": [
+    "SWIGGY",
+    "ZOMATO",
+    "DOMINOS",
+    "KFC",
+    "MCDONALDS",
+    "STARBUCKS",
+    "DINEOUT",
+    "BAKERY",
+    "CAFE NILOUFER",
+    "CAFE",
+    "HOTEL",
+    "GANGOTHR"
+  ],
+  "Travel": [
+    "AGODA",
+    "UBER",
+    "OLA",
+    "IRCTC",
+    "MAKEMYTRIP",
+    "TRIP.COM",
+    "CLEARTRIP",
+    "GOIBIBO",
+    "EMI TRIP",
+    "IBIBO",
+    "LOUNGE",
+    "RESORT",
+    "RESOR",
+    "BEACH",
+    "MMT",
+    "INDIGO",
+    "FLIGHT"
+  ],
+  "Shopping": [
+    "AMAZON",
+    "FLIPKART",
+    "MYNTRA",
+    "AJIO",
+    "NYKAA",
+    "MEESHO",
+    "RELIANCE RETAIL",
+    "RELIANCE TRENDS",
+    "TRENDS",
+    "LIFE STYLE",
+    "CARATLANE",
+    "FIRST CRY",
+    "FIRSTCRY"
+  ],
+  "Gift Vouchers": [
+    "GYFTR"
+  ],
+  "Entertainment": [
+    "NETFLIX",
+    "SPOTIFY",
+    "GOOGLE PLAY",
+    "APPLE",
+    "HOTSTAR",
+    "PRIME VIDEO"
+  ],
+  "Utilities": [
+    "BESCOM",
+    "BWSSB",
+    "JIO",
+    "AIRTEL",
+    "VODAFONE",
+    "TATA PLAY",
+    "BBPS",
+    "RECHARGE",
+    "TIMESPRIME"
+  ],
+  "Groceries": [
+    "BIGBASKET",
+    "DMART",
+    "MORE",
+    "RELIANCE FRESH",
+    "SPAR",
+    "BLINKIT",
+    "INSTAMART",
+    "RATNADEEP",
+    "SUPERMARTS",
+    "MILKBASKET"
+  ],
+  "Fuel": [
+    "IOCL",
+    "BPCL",
+    "HPCL",
+    "SHELL",
+    "INDIAN OIL",
+    "INDIAN O"
+  ],
+  "Finance": [
+    "IGST",
+    "GST",
+    "FINANCE CHARGES",
+    "DCC Transaction",
+    "ETMONEY"
+  ],
+  "Education": [
+    "SCHOOL",
+    "GLOBAL EDGE",
+    "EURO KID"
+  ],
+  "Healthcare": [
+    "ANKURA",
+    "HOSPITAL",
+    "PHARMACY",
+    "CLINIC",
+    "APOLLO",
+    "PHARMEASY",
+    "ConnectandHeal"
+  ],
+  "Insurance": [
+    "HDFCGENERAL",
+    "INSURANCE",
+    "ERGO"
+  ],
+  "Automotive": [
+    "JASPER INDUSTRIES",
+    "JASPER",
+    "MOTORS",
+    "AUTOMOTIVE"
+  ],
+  "Income": [
+    "INTEREST CREDIT",
+    "INTEREST"
+  ],
+  "UPI": [
+    "UPI"
+  ],
+  "Payment": [
+    "CREDIT CARD PAYMENT",
+    "NETBANKING TRANSFER",
+    "AUTOPAY",
+    "BBPS PAYMENT",
+    "TELE TRANSFER CREDIT",
+    "CC PAYMENT"
+  ]
+}
