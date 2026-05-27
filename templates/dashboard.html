@@ -279,6 +279,49 @@
             border-color: var(--accent-indigo);
         }
 
+        .date-picker-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(10, 15, 30, 0.8);
+            border: 1px solid var(--glass-border);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            transition: border-color 0.3s;
+            max-width: 320px;
+        }
+
+        .date-picker-wrapper:focus-within {
+            border-color: var(--accent-indigo);
+        }
+
+        .date-input {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.9rem;
+            outline: none;
+            cursor: pointer;
+            width: 120px;
+        }
+
+        .date-input::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .date-input::-webkit-calendar-picker-indicator:hover {
+            opacity: 1;
+        }
+
+        .date-sep {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
         .table-container {
             width: 100%;
             overflow-x: auto;
@@ -511,6 +554,13 @@
                 width: 100%;
                 flex: 1 1 calc(50% - 0.375rem);
             }
+
+            .date-picker-wrapper {
+                max-width: none;
+                width: 100%;
+                flex: 1 1 100%;
+                justify-content: space-between;
+            }
         }
 
         /* Tabs Control styling */
@@ -659,8 +709,14 @@
                     <option value="ALL">All Cards/Accounts</option>
                 </select>
                 <select id="monthFilter" class="filter-dropdown">
-                    <option value="ALL">All Months</option>
+                    <option value="ALL">All Time</option>
+                    <option value="CUSTOM">Custom Range...</option>
                 </select>
+                <div id="customDateRange" class="date-picker-wrapper" style="display: none;">
+                    <input type="date" id="startDate" class="date-input" title="Start Date">
+                    <span class="date-sep">to</span>
+                    <input type="date" id="endDate" class="date-input" title="End Date">
+                </div>
                 <select id="categoryFilter" class="filter-dropdown">
                     <option value="ALL">All Categories</option>
                 </select>
@@ -818,6 +874,53 @@
         let currentSortCol = 0;
         let currentSortAsc = false; // Descending by default for Date
 
+        // Indian Financial Year (FY) calculation helpers (starts April 1st, ends March 31st next year)
+        function getIndianFY(dateStr) {
+            const year = parseInt(dateStr.substring(0, 4));
+            const month = parseInt(dateStr.substring(5, 7));
+            if (month >= 4) {
+                const nextYearShort = (year + 1).toString().substring(2, 4);
+                return {
+                    value: `FY-${year}-${nextYearShort}`,
+                    label: `FY ${year}-${nextYearShort}`,
+                    start: `${year}-04-01`,
+                    end: `${year + 1}-03-31`
+                };
+            } else {
+                const prevYear = year - 1;
+                const yearShort = year.toString().substring(2, 4);
+                return {
+                    value: `FY-${prevYear}-${yearShort}`,
+                    label: `FY ${prevYear}-${yearShort}`,
+                    start: `${prevYear}-04-01`,
+                    end: `${year}-03-31`
+                };
+            }
+        }
+
+        function getUniqueFinancialYears(transactions) {
+            const fys = {};
+            transactions.forEach(tx => {
+                if (tx.date) {
+                    const fyObj = getIndianFY(tx.date);
+                    if (!fys[fyObj.value]) {
+                        fys[fyObj.value] = fyObj;
+                    }
+                }
+            });
+            return Object.values(fys).sort((a, b) => b.value.localeCompare(a.value));
+        }
+
+        function getFYBounds(fyValue) {
+            const parts = fyValue.split('-');
+            const startYear = parseInt(parts[1]);
+            const endYear = startYear + 1;
+            return {
+                start: `${startYear}-04-01`,
+                end: `${endYear}-03-31`
+            };
+        }
+
         // Date formatter helper: formats "YYYY-MM-DD HH:MM" to "DD-MM-YYYY HH:MM"
         function formatToDMY(isoDateStr) {
             if (!isoDateStr) return '';
@@ -894,7 +997,26 @@
                     // Register listeners
                     document.getElementById('searchInput').addEventListener('input', updateDashboard);
                     document.getElementById('cardFilter').addEventListener('change', updateDashboard);
-                    document.getElementById('monthFilter').addEventListener('change', updateDashboard);
+                    
+                    document.getElementById('monthFilter').addEventListener('change', (e) => {
+                        const customRange = document.getElementById('customDateRange');
+                        if (e.target.value === 'CUSTOM') {
+                            customRange.style.display = 'flex';
+                            if (allTransactions.length > 0) {
+                                const dates = allTransactions.map(tx => tx.date.substring(0, 10));
+                                const minDate = dates.reduce((a, b) => a < b ? a : b);
+                                const maxDate = dates.reduce((a, b) => a > b ? a : b);
+                                document.getElementById('startDate').value = minDate;
+                                document.getElementById('endDate').value = maxDate;
+                            }
+                        } else {
+                            customRange.style.display = 'none';
+                        }
+                        updateDashboard();
+                    });
+                    document.getElementById('startDate').addEventListener('change', updateDashboard);
+                    document.getElementById('endDate').addEventListener('change', updateDashboard);
+                    
                     document.getElementById('categoryFilter').addEventListener('change', updateDashboard);
                     document.getElementById('outlierFilter').addEventListener('change', updateDashboard);
                 })
@@ -967,12 +1089,34 @@
 
             switchTabStyle(tab);
 
-            // Reset card, month, category filter selections when toggling tabs to avoid cross-pollution
+            // Reset card and category filter selections, but preserve time range / custom range selection
             document.getElementById('cardFilter').value = 'ALL';
-            document.getElementById('monthFilter').value = 'ALL';
             document.getElementById('categoryFilter').value = 'ALL';
 
+            // Capture current time range filter state before populating
+            const prevTimeRange = document.getElementById('monthFilter').value;
+            const prevStartVal = document.getElementById('startDate').value;
+            const prevEndVal = document.getElementById('endDate').value;
+
             populateFilters();
+
+            // Restore time range state if valid
+            const monthFilter = document.getElementById('monthFilter');
+            if ([...monthFilter.options].some(opt => opt.value === prevTimeRange)) {
+                monthFilter.value = prevTimeRange;
+            } else {
+                monthFilter.value = 'ALL';
+            }
+
+            const customRange = document.getElementById('customDateRange');
+            if (monthFilter.value === 'CUSTOM') {
+                customRange.style.display = 'flex';
+                document.getElementById('startDate').value = prevStartVal;
+                document.getElementById('endDate').value = prevEndVal;
+            } else {
+                customRange.style.display = 'none';
+            }
+
             updateDashboard();
         }
 
@@ -1010,13 +1154,28 @@
 
             // Populate Month Filter
             const monthFilter = document.getElementById('monthFilter');
-            monthFilter.innerHTML = '<option value="ALL">All Months</option>';
-            monthsOptions.forEach(m => {
-                const opt = document.createElement('option');
-                opt.value = m.value;
-                opt.textContent = m.label;
-                monthFilter.appendChild(opt);
-            });
+            let html = '<option value="ALL">All Time</option><option value="CUSTOM">Custom Range...</option>';
+            
+            // Add Indian Financial Years optgroup
+            const uniqueFYs = getUniqueFinancialYears(allTransactions);
+            if (uniqueFYs.length > 0) {
+                html += '<optgroup label="Financial Years (India)">';
+                uniqueFYs.forEach(fy => {
+                    html += `<option value="${fy.value}">${fy.label}</option>`;
+                });
+                html += '</optgroup>';
+            }
+            
+            // Add Month splits optgroup
+            if (monthsOptions.length > 0) {
+                html += '<optgroup label="Monthly Splits">';
+                monthsOptions.forEach(m => {
+                    html += `<option value="${m.value}">${m.label}</option>`;
+                });
+                html += '</optgroup>';
+            }
+            
+            monthFilter.innerHTML = html;
 
             // Populate Category Filter
             const categoryFilter = document.getElementById('categoryFilter');
@@ -1042,7 +1201,22 @@
                 if (!tabMatch) return false;
 
                 const cardMatch = (selectedCard === 'ALL') || (tx.card === selectedCard);
-                const monthMatch = (selectedMonth === 'ALL') || (tx.month === selectedMonth);
+                
+                let dateMatch = true;
+                if (selectedMonth === 'CUSTOM') {
+                    const startVal = document.getElementById('startDate').value;
+                    const endVal = document.getElementById('endDate').value;
+                    const txDateOnly = tx.date.substring(0, 10);
+                    if (startVal && txDateOnly < startVal) dateMatch = false;
+                    if (endVal && txDateOnly > endVal) dateMatch = false;
+                } else if (selectedMonth.startsWith('FY-')) {
+                    const bounds = getFYBounds(selectedMonth);
+                    const txDateOnly = tx.date.substring(0, 10);
+                    if (txDateOnly < bounds.start || txDateOnly > bounds.end) dateMatch = false;
+                } else if (selectedMonth !== 'ALL') {
+                    dateMatch = (tx.month === selectedMonth);
+                }
+
                 let categoryMatch = false;
                 if (selectedCategory === 'ALL') {
                     categoryMatch = !tx.is_payment;
@@ -1061,7 +1235,7 @@
                 const formattedDate = formatToDMY(tx.date);
                 const textMatch = tx.description.toLowerCase().includes(searchQuery) ||
                     formattedDate.toLowerCase().includes(searchQuery);
-                return cardMatch && monthMatch && categoryMatch && textMatch && outlierMatch;
+                return cardMatch && dateMatch && categoryMatch && textMatch && outlierMatch;
             });
 
             // Calculate KPIs
@@ -1178,11 +1352,34 @@
             // Render Ledger Table
             renderTable(filtered, totalPoints, netSpending);
 
+            // Calculate covered months dynamically for charts and insights
+            let coveredMonths = uniqueMonths;
+            if (selectedMonth === 'CUSTOM') {
+                const startVal = document.getElementById('startDate').value;
+                const endVal = document.getElementById('endDate').value;
+                const startMonth = startVal ? startVal.substring(0, 7) : '';
+                const endMonth = endVal ? endVal.substring(0, 7) : '';
+                coveredMonths = uniqueMonths.filter(m => {
+                    if (startMonth && m < startMonth) return false;
+                    if (endMonth && m > endMonth) return false;
+                    return true;
+                });
+            } else if (selectedMonth.startsWith('FY-')) {
+                const bounds = getFYBounds(selectedMonth);
+                const startMonth = bounds.start.substring(0, 7);
+                const endMonth = bounds.end.substring(0, 7);
+                coveredMonths = uniqueMonths.filter(m => {
+                    return m >= startMonth && m <= endMonth;
+                });
+            } else if (selectedMonth !== 'ALL') {
+                coveredMonths = [selectedMonth];
+            }
+
             // Render Charts
-            renderCharts(filtered, uniqueMonths);
+            renderCharts(filtered, coveredMonths);
 
             // Render Insights
-            renderInsights(filtered, uniqueMonths, totalDebited, netSpending);
+            renderInsights(filtered, coveredMonths, totalDebited, netSpending);
         }
 
         function renderTable(txs, totalPoints, netSpending) {
